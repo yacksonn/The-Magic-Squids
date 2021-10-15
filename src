@@ -1,0 +1,15 @@
+--Which Type of Complaint is Most Likely in Each Beat?--
+CREATE TEMP TABLE number_of_allegations AS
+    SELECT
+           COUNT(da.beat_id) AS total_allegation_type,
+           da.most_common_category_id, da.beat_id, dac.id, dac.category, dac.allegation_name
+    FROM data_allegation da
+    JOIN data_allegationcategory dac
+    ON da.most_common_category_id = dac.id
+    GROUP BY da.beat_id, dac.allegation_name, da.most_common_category_id, da.beat_id, dac.id, dac.category, dac.allegation_name
+    ORDER BY da.beat_id;
+
+SELECT beat_id, MAX(total_allegation_type), MAX(allegation_name) AS allegation_name, MAX(id) AS id
+FROM number_of_allegations
+GROUP BY beat_id
+ORDER BY beat_id
