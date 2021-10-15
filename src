@@ -13,3 +13,36 @@ SELECT beat_id, MAX(total_allegation_type), MAX(allegation_name) AS allegation_n
 FROM number_of_allegations
 GROUP BY beat_id
 ORDER BY beat_id
+
+-- QUESTION 3
+-- Creates a temp table showing total population per police district
+CREATE TEMP TABLE total_population AS
+    SELECT SUM(count) AS total_residents, area_id
+    FROM data_racepopulation drp
+        JOIN data_area da ON drp.area_id = da.id
+    WHERE da.area_type = 'police-districts'
+    GROUP BY drp.area_id
+    ORDER BY drp.area_id;
+
+-- Creates a temp table showing black population per police district
+CREATE TEMP TABLE black_population AS
+    SELECT count AS black_residents, area_id
+    FROM data_racepopulation drp
+        JOIN data_area da ON drp.area_id = da.id
+    WHERE drp.race = 'Black' AND da.area_type = 'police-districts'
+    ORDER BY drp.area_id;
+
+-- Combining both tables to show black vs total population for each police district
+SELECT black_residents, total_residents, area_id
+FROM black_population bp
+    JOIN total_population tp on bp.area_id = tp.area_id
+ORDER BY tp.area_id;
+
+
+-- QUESTION 2
+SELECT COUNT(beat_id) AS total_allegations, beat_id
+FROM data_allegation da
+GROUP BY da.beat_id;
+
+-- QUESTION 1
+SELECT * FROM data_officerassignmentattendance
