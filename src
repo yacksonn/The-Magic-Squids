@@ -17,10 +17,10 @@ CREATE TEMP TABLE beats_and_areas as
     SELECT officer_id, beat_id as beat_id, area_id as area_id
     FROM data_officerassignmentattendance oaa
     JOIN data_policebeat pb on oaa.beat_id = pb.id;
-
-SELECT *
-FROM beats_and_areas baa
-JOIN data_area da on baa.area_id = da.id
+    
+SELECT COUNT(officer_id) AS total_assignments, area_id FROM beats_and_areas
+GROUP BY area_id
+ORDER BY area_id;
 
 
 
