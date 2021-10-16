@@ -8,3 +8,7 @@ Questions being investigated for this checkpoint:
 4) Which type of complaint is most likely in each police beat?
 
 The answers to these questions are provided by sequences of SQL queries found in src.sql
+
+How to run the code:
+
+Code for each question should be run independently.  All code under one question and above the next is needed to retreive accurate information.  Run all code for each question at once, creating all the temp tables sequentially.
