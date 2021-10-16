@@ -86,11 +86,10 @@ CREATE TEMP TABLE beats_with_polygons as
     FROM number_of_allegations noa
     JOIN data_area da on noa.beat_id = da.id;
 
-CREATE TEMP TABLE allegations_by_polygon as
-    SELECT beat_id, MAX(total_allegation_type) as allegations, MAX(allegation_name) as allegation_name, MAX(id) as id, MAX(polygon) as polygon
-    FROM beats_with_polygons
-    GROUP BY beat_id
-    ORDER BY beat_id;
+SELECT beat_id, MAX(total_allegation_type) AS allegations, MAX(allegation_name) AS allegation_name, MAX(id) AS id, MAX(polygon) AS polygon
+FROM beats_with_polygons
+GROUP BY beat_id
+ORDER BY beat_id;
 
 /*SELECT
     SUM(allegations) AS total_allegations, da.id AS district_id, MAX(abp.allegations) as allegations, MAX(abp.allegation_name) as allegation_name, CAST(polygon as geometry)
