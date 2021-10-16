@@ -1,4 +1,5 @@
 -- Frequently Used Temp Table for Total Population
+
 CREATE TEMP TABLE total_population AS
     SELECT SUM(count) AS total_residents, area_id
     FROM data_racepopulation drp
@@ -6,6 +7,9 @@ CREATE TEMP TABLE total_population AS
     WHERE da.area_type = 'police-districts'
     GROUP BY drp.area_id
     ORDER BY drp.area_id;
+    
+    
+    
 
 -- QUESTION 1: What is the number of police officers per capita that are assigned to each police district?
 
