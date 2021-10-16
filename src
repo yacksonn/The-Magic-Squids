@@ -45,7 +45,7 @@ CREATE TEMP TABLE black_population AS
     WHERE drp.race = 'Black' AND da.area_type = 'police-districts'
     ORDER BY drp.area_id;
 
-SELECT black_residents, total_residents, area_id
+SELECT CAST(black_residents AS float) / CAST(total_residents AS float) AS proportion_black, bp.area_id AS district_id
 FROM black_population bp
     JOIN total_population tp on bp.area_id = tp.area_id
 ORDER BY tp.area_id;
