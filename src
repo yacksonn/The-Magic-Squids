@@ -1,9 +1,9 @@
--- QUESTION 1
+-- QUESTION 1: What is the number of police officers per capita that are assigned to each police district?
 SELECT * FROM data_officerassignmentattendance
 
 
 
--- QUESTION 2
+-- QUESTION 2: What is the number of complaints per capita per police district?
 CREATE TEMP TABLE allegations_per_beat AS
     SELECT COUNT(beat_id) AS total_allegations, beat_id
     FROM data_allegation da
@@ -29,7 +29,7 @@ FROM allegations_per_district apd
     
     
 
--- QUESTION 3
+-- QUESTION 3: What is the proportion of black residents in each police district?
 CREATE TEMP TABLE total_population AS
     SELECT SUM(count) AS total_residents, area_id
     FROM data_racepopulation drp
@@ -52,7 +52,7 @@ ORDER BY tp.area_id;
 
 
 
--- QUESTION 4
+-- QUESTION 4: Which type of complaint is most likely in each police district?
 CREATE TEMP TABLE number_of_allegations AS
     SELECT
            COUNT(da.beat_id) AS total_allegation_type,
