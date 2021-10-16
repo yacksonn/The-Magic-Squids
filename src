@@ -14,13 +14,39 @@ CREATE TEMP TABLE total_population AS
 -- QUESTION 1: What is the number of police officers per capita that are assigned to each police district?
 
 CREATE TEMP TABLE beats_and_areas as
-    SELECT officer_id, beat_id as beat_id, area_id as area_id
+    SELECT officer_id, beat_id as beat_id, area_id as area_id, start_timestamp
     FROM data_officerassignmentattendance oaa
     JOIN data_policebeat pb on oaa.beat_id = pb.id;
-    
-SELECT COUNT(officer_id) AS total_assignments, area_id FROM beats_and_areas
-GROUP BY area_id
-ORDER BY area_id;
+
+
+CREATE TEMP TABLE assignments_by_beat as
+    SELECT
+        COUNT(officer_id) AS total_assignments, area_id FROM beats_and_areas
+        WHERE beats_and_areas.start_timestamp >= TO_TIMESTAMP( '2020-07-24', 'yyyy-mm-dd' )
+        AND beats_and_areas.start_timestamp < TO_TIMESTAMP( '2020-07-25', 'yyyy-mm-dd')
+    GROUP BY area_id
+    ORDER BY area_id;
+
+CREATE TEMP TABLE assignments_per_beat_poly AS
+    SELECT total_assignments, area_id, polygon
+    FROM assignments_by_beat abb
+    JOIN data_area da ON abb.area_id = da.id
+    ORDER BY area_id;
+
+--CREATE TEMP TABLE assignments_per_district AS
+SELECT SUM(total_assignments) AS total_officers, da.id AS district_id, da.name as district_name
+FROM assignments_per_beat_poly apbp
+    JOIN data_area da ON st_intersects(da.polygon, apbp.polygon)
+WHERE da.area_type = 'police-districts'
+GROUP BY da.id
+ORDER BY da.id;
+
+
+
+
+DROP TABLE IF EXISTS beats_and_areas;
+DROP TABLE IF EXISTS assignments_by_beat;
+DROP TABLE IF EXISTS assignments_per_beat_poly;
 
 
 
