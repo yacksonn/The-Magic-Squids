@@ -13,8 +13,14 @@ CREATE TEMP TABLE total_population AS
 
 -- QUESTION 1: What is the number of police officers per capita that are assigned to each police district?
 
-SELECT * FROM data_officerassignmentattendance
+CREATE TEMP TABLE beats_and_areas as
+    SELECT officer_id, beat_id as beat_id, area_id as area_id
+    FROM data_officerassignmentattendance oaa
+    JOIN data_policebeat pb on oaa.beat_id = pb.id;
 
+SELECT *
+FROM beats_and_areas baa
+JOIN data_area da on baa.area_id = da.id
 
 
 
