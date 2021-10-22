@@ -42,5 +42,19 @@ ORDER BY pd_id
 
 
 -- Visualization 2: Grouped histogram showing breakdown of proportion of complaints submitted by black vs non-black residents for each type of complaint
-
--- Custom SQL Query 1:
+SELECT
+       da.allegation_name, black, white, hispanic,
+       (black + white + hispanic) as total_allegations,
+       COALESCE(black / NULLIF(CAST((black + white + hispanic) as float), 0),0) as black_proportion,
+       COALESCE(white / NULLIF(CAST((black + white + hispanic) as float), 0),0) as white_proportion,
+       COALESCE(hispanic / NULLIF(CAST((black + white + hispanic) as float), 0),0) as hispanic_proportion
+FROM
+    (SELECT most_common_category_id,
+        SUM(case when race = 'Black' then 1 else 0 end) black,
+        SUM(case when race = 'White' then 1 else 0 end) white,
+        SUM(case when race = 'Hispanic' then 1 else 0 end) hispanic
+    FROM data_allegation da
+        JOIN data_complainant dc on da.crid = dc.allegation_id
+    group by most_common_category_id) allegations_abr_race
+JOIN data_allegationcategory da on most_common_category_id = da.id
+GROUP BY da.allegation_name, black, white, hispanic;
