@@ -53,7 +53,7 @@ def clean_data(filename):
 	# Removing 'SELECT_FROM_' and '.csv'
 	name = filename[12:-4]
 
-	# Correcting types
+	# 2.1: Correcting types
 	if name in type_correction:
 		for column in type_correction[name]:
 
@@ -75,19 +75,20 @@ def clean_data(filename):
 						continue
 					else:
 						data.at[i, column[0]] = None
-				print(data[column[0]])
+
+	# 2.2: Reconciliation
 
 	return data, name
 
 
+
 if __name__ == '__main__':
 
-	# Grabbing all CSV files, remove SELECT_FROM_ from names
+	# Grabbing all CSV files
 	to_clean = [f for f in os.listdir('./raw-data') if f[-4:] == '.csv']
 
 	# Creating a cleaned version for each
 	for f in to_clean:
 		data, name = clean_data(f)
-		if name == 'trr_trr_refresh':
+		if name == 'trr_trr_refresh': 
 			pass
-			
