@@ -1,11 +1,13 @@
 import os
 import pandas as pd
+from functools import lru_cache
 from collections import Counter
+from difflib import SequenceMatcher
 
 # Gets us one level up, so that we can access all files
 os.chdir(os.path.relpath('..'))
 
-# Hard coding which tables need to be altered
+# Hard coding which columns need to have their types corrected, and to what type
 type_correction = {
 	'trr_trr_refresh': [('trr_datetime', 'datetime64'),
 						('beat', 'int64'),
@@ -26,28 +28,117 @@ type_correction = {
 						('notify_det_division', 'bool'),
 						('trr_created', 'datetime64')
 						],
+
 	'trr_weapondischarge_refresh': [('firearm_reloaded', 'bool'),
 									('sight_used', 'bool')
 									],
+
 	'trr_weapondischarge_refres': [('firearm_reloaded', 'bool'),
 								   ('sight_used', 'bool')
 								   ],
+
 	'trr_trrstatus_refresh': [('officer_appointed_date', 'datetime64'),
 							  ('officer_birth_year', 'int64'),
 							  ('status_datetime', 'datetime64')
 							  ]
-
 }
 
-reconciliation = { }
+# Hard coding what columns need to be reconciled with what other tables, and the columns that need to match from each
+reconciliation = {
+	'trr_trr_refresh': {
+
+		'data_officer': [('officer_last_name', 'last_name'),
+						 ('officer_first_name', 'first_name'), ('officer_birth_year', 'birth_year'), 
+						 ('officer_race', 'race'), 
+						 ('officer_gender', 'gender'), ('officer_appointed_date', 'appointed_date')],
+
+		'trr_trr': [('subject_race', 'subject_race'), 
+					('subject_gender', 'subject_gender'), ('subject_birth_year', 'subject_birth_year'),
+					('party_fired_first', 'party_fired_first'),
+					('indoor_or_outdoor', 'indoor_or_outdoor'),
+					('location', 'location'),
+					('street', 'street')]		
+	},
+
+	'trr_trr_subjectweapon_refresh': {
+
+		'trr_trr_subjectweapon' : [('weapon_type', 'weapon_type')]
+	},
+
+	'trr_trrstatus_refresh': {
+
+		'data_officer': [('officer_first_name', 'first_name'),
+						  ('officer_last_name', 'last_name'),
+						  ('officer_birth_year', 'birth_year'),
+						  ('officer_race', 'race'),
+						  ('officer_gender', 'gender'),
+						  ('officer_appointed_date', 'appointed_date')]
+	}
+}
+
 
 # Returns an uncleaned table as a dataframe
-def load_data(filename):
-	return pd.read_csv('./raw-data/' + filename, low_memory=False)
+@lru_cache
+def load_data(filename, clean=False):
+
+	# Can include the .csv or not when inputting filename
+	filename = filename + '.csv' if '.csv' not in filename else filename
+	filename = 'SELECT_FROM_' + filename if 'SELECT_FROM_' not in filename else filename
+
+	# Fetching the data
+	try:
+		return pd.read_csv('./raw-data/' + filename, low_memory=False)
+
+	# Data not found
+	except FileNotFoundError:
+		raise FileNotFoundError(f'Unable to find data for \'{filename}\'. Please ensure that ensure that all tables have been downloaded correctly from datagrip, and that all filenames in the raw-data folder begin with \'SELECT_FROM_\'')
+
+def conversion_dict(valid, to_convert):
+
+	conversions = {}
+
+	# We want a valid conversion value for every possible type of value in the refresh data
+	for value in to_convert:
+
+		# If value is already a valid value
+		if value in valid:
+			conversions[value] = value
+
+		# Perform string similarity matching between refresh value and valid values
+		else:
+			best = ''
+			best_ratio = 0
+			for valid_value in valid:
+
+				# Ensuring we perform string comparisons
+				valid_value, value = str(valid_value), str(value)
+
+				# We want ensure that single characters are compared to single characters, otherwise matches become nondeterministic
+				if len(value) == 1 or len(valid_value) == 1:
+					refresh_value, valid_value = value[0], valid_value[0]
+				else:
+					refresh_value = value
+				
+				# Perform the comparison
+				ratio = SequenceMatcher(None, refresh_value.lower(), valid_value.lower()).ratio()
+
+				# Compare it to the current best
+				if ratio > best_ratio:
+					best = valid_value
+					best_ratio = ratio
+				if best_ratio > 0.95:
+					break
+
+			# If the best ratio is not above 0.3, use NULL instead
+			conversions[value] = best if best_ratio > 0.3 else float('NaN')
+
+	return conversions
 
 
 # Given a filename, outputs a cleaned CSV of the file in ../output
 def clean_data(filename):
+
+	# Fetching table
 	data = load_data(filename)
 
 	# Removing 'SELECT_FROM_' and '.csv'
@@ -63,6 +154,7 @@ def clean_data(filename):
 
 			# Correcting integers
 			elif column[1] == 'int64':
+				#data[column[0]] = pd.to_numeric(data[column[0]], errors='coerce').fillna(0).astype('int')
 				data[column[0]] = pd.to_numeric(data[column[0]], errors='coerce', downcast='integer')
 
 			# Correcting bools
@@ -77,6 +169,15 @@ def clean_data(filename):
 						data.at[i, column[0]] = None
 
 	# 2.2: Reconciliation
+	if name in reconciliation:
+		for table in reconciliation[name]:
+			clean = load_data(table)
+			for column in reconciliation[name][table]:
+				print(column[0], column[1])
+				valid = set(clean[column[1]].to_list())
+				to_clean = set(data[column[0]].to_list())
+				if len(valid) < 50:
+					print(conversion_dict(valid, to_clean))
 
 	return data, name
 
@@ -85,7 +186,7 @@ def clean_data(filename):
 if __name__ == '__main__':
 
 	# Grabbing all CSV files
-	to_clean = [f for f in os.listdir('./raw-data') if f[-4:] == '.csv']
+	to_clean = [f for f in os.listdir('./raw-data') if 'refresh' in f]
 
 	# Creating a cleaned version for each
 	for f in to_clean:
