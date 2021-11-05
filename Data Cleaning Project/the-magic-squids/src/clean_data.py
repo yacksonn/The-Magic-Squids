@@ -77,7 +77,7 @@ reconciliation = {
 }
 
 
-# Returns an uncleaned table as a dataframe
+# Returns a CPDB table as a dataframe
 @lru_cache
 def load_data(filename, clean=False):
 
@@ -93,6 +93,8 @@ def load_data(filename, clean=False):
 	except FileNotFoundError:
 		raise FileNotFoundError(f'Unable to find data for \'{filename}\'. Please ensure that ensure that all tables have been downloaded correctly from datagrip, and that all filenames in the raw-data folder begin with \'SELECT_FROM_\'')
 
+
+# Given a set of valid values and a set of values to convert, returns a dictionary where keys are values to be converted, and values are the respective appropriate conversion
 def conversion_dict(valid, to_convert):
 
 	conversions = {}
@@ -135,7 +137,35 @@ def conversion_dict(valid, to_convert):
 	return conversions
 
 
-# Given a filename, outputs a cleaned CSV of the file in ../output
+# Given a string of one or more words, returns a string with all words capitalized, and otherwise lowercase. Performs itself recursively for lists
+def capitalized(string):
+
+	# Handle lists of strings that need capitalization
+	if isinstance(string, list):
+		return [capitalized(x) for x in string]
+
+	# Only return a capitalized string if we are handling a string
+	return ' '.join([x.lower().capitalize() for x in string.split()]) if isinstance(string, str) else string
+
+
+
+# Taking a pd.Series object and a conversion dict / function, returns a new series with all values converted accordingly. SERIES MUST BE A SINGLE COLUMN
+def convert(series, cd=capitalized):
+
+	# Capitalizing values by default
+	if isinstance(cd, type(capitalized)):
+		for i, value in enumerate(series):
+			series.at[i] = cd(value)
+
+	# Using a conversion dict
+	elif isinstance(cd, dict):
+		for i, value in enumerate(series):
+			series.at[i] = cd[value]
+
+	return series
+
+
+# Given a filename, outputs a cleaned CSV of the file in ../output/
 def clean_data(filename):
 
 	# Fetching table
@@ -171,13 +201,38 @@ def clean_data(filename):
 	# 2.2: Reconciliation
 	if name in reconciliation:
 		for table in reconciliation[name]:
+			
+			# Getting the real data (already cleaned)
 			clean = load_data(table)
+
 			for column in reconciliation[name][table]:
-				print(column[0], column[1])
+
+				# Getting all valid conversion values
 				valid = set(clean[column[1]].to_list())
-				to_clean = set(data[column[0]].to_list())
-				if len(valid) < 50:
-					print(conversion_dict(valid, to_clean))
+
+				# Reconciliation of numerical columns
+				if True:
+					pass
+
+				# Reconciliation of categorical columns
+				elif len(valid) < 50:
+
+					# All values which need a conversion
+					to_clean = set(data[column[0]].to_list())
+
+					# Finding conversions between values
+					cd = conversion_dict(valid, to_clean)
+
+					# Setting new series in place of the old column
+					data[column[0]] = convert(data[column[0]], cd)
+
+				# Reconciliation of non-categorical columns
+				else:
+					data[column[0]] = convert(data[column[0]])
+
+
+	# Outputting all cleaned tables to ./output/ as CSVs
+	data.to_csv('./output/' + name + '.csv')
 
 	return data, name
 
@@ -185,8 +240,9 @@ def clean_data(filename):
 
 if __name__ == '__main__':
 
-	# Grabbing all CSV files
-	to_clean = [f for f in os.listdir('./raw-data') if 'refresh' in f]
+	# Grabbing all CSV files that need to be cleaned
+	# Sometimes datagrip fails to include 'h' in 'refresh'... not sure what's going on here.
+	to_clean = [f for f in os.listdir('./raw-data/') if 'refres' in f]
 
 	# Creating a cleaned version for each
 	for f in to_clean:
