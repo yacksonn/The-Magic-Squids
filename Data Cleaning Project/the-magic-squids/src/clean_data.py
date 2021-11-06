@@ -10,23 +10,23 @@ os.chdir(os.path.relpath('..'))
 # Hard coding which columns need to have their types corrected, and to what type
 type_correction = {
 	'trr_trr_refresh': [('trr_datetime', 'datetime64'),
-			    ('beat', 'int64'),
-			    ('officer_appointed_date', 'datetime64'),
-			    ('officer_birth_year', 'int64'),
-			    ('officer_age', 'int64'),
-			    ('officer_on_duty', 'bool'),
-			    ('officer_injured', 'bool'),
-			    ('officer_in_uniform', 'bool'),
-			    ('subject_birth_year', 'int64'),
-			    ('subject_age', 'int64'),
-			    ('subject_armed', 'bool'),
-			    ('subject_injured', 'bool'),
-			    ('subject_alleged_injury', 'bool'),
-			    ('notify_oemc', 'bool'),
-			    ('notify_district_sergeant', 'bool'),
-			    ('notify_op_command', 'bool'),
-			    ('notify_det_division', 'bool'),
-			    ('trr_created', 'datetime64')
+						('beat', 'int64'),
+						('officer_appointed_date', 'datetime64'),
+						('officer_birth_year', 'int64'),
+						('officer_age', 'int64'),
+						('officer_on_duty', 'bool'),
+						('officer_injured', 'bool'),
+						('officer_in_uniform', 'bool'),
+						('subject_birth_year', 'int64'),
+						('subject_age', 'int64'),
+						('subject_armed', 'bool'),
+						('subject_injured', 'bool'),
+						('subject_alleged_injury', 'bool'),
+						('notify_oemc', 'bool'),
+						('notify_district_sergeant', 'bool'),
+						('notify_op_command', 'bool'),
+						('notify_det_division', 'bool'),
+						('trr_created', 'datetime64')
 						],
 
 	'trr_weapondischarge_refresh': [('firearm_reloaded', 'bool'),
@@ -148,6 +148,22 @@ def capitalized(string):
 	return ' '.join([x.lower().capitalize() for x in string.split()]) if isinstance(string, str) else string
 
 
+# Given an ambiguous integer corresponding to age or birth year, returns the most likely birth year
+def age_to_year(age, split=1940):
+
+	print(age)
+
+	# Handle list of ages recursively:
+	if isinstance(age, list):
+		return [age_to_year(x) for x in age]
+	
+	# Guessing their birth year based on a split
+	if isinstance(age, (int, float)) and age < 100:
+		split = 2021 - split
+		return age + 1900 if age > split else 2021 - age
+
+
+
 
 # Taking a pd.Series object and a conversion dict / function, returns a new series with all values converted accordingly. SERIES MUST BE A SINGLE COLUMN
 def convert(series, cd=capitalized):
@@ -211,8 +227,8 @@ def clean_data(filename):
 				valid = set(clean[column[1]].to_list())
 
 				# Reconciliation of numerical columns
-				if True:
-					pass
+				if Counter([type(x) for x in valid]).most_common()[0][0] in [int, float]:
+					data[column[0]] = convert(data[column[0]], age_to_year)
 
 				# Reconciliation of categorical columns
 				elif len(valid) < 50:
