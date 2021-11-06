@@ -148,6 +148,22 @@ def capitalized(string):
 	return ' '.join([x.lower().capitalize() for x in string.split()]) if isinstance(string, str) else string
 
 
+# Given an ambiguous integer corresponding to age or birth year, returns the most likely birth year
+def age_to_year(age, split=1940):
+
+	print(age)
+
+	# Handle list of ages recursively:
+	if isinstance(age, list):
+		return [age_to_year(x) for x in age]
+	
+	# Guessing their birth year based on a split
+	if isinstance(age, (int, float)) and age < 100:
+		split = 2021 - split
+		return age + 1900 if age > split else 2021 - age
+
+
+
 
 # Taking a pd.Series object and a conversion dict / function, returns a new series with all values converted accordingly. SERIES MUST BE A SINGLE COLUMN
 def convert(series, cd=capitalized):
@@ -211,8 +227,8 @@ def clean_data(filename):
 				valid = set(clean[column[1]].to_list())
 
 				# Reconciliation of numerical columns
-				if True:
-					pass
+				if Counter([type(x) for x in valid]).most_common()[0][0] in [int, float]:
+					data[column[0]] = convert(data[column[0]], age_to_year)
 
 				# Reconciliation of categorical columns
 				elif len(valid) < 50:
