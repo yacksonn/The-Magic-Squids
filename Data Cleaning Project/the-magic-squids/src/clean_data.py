@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+from pandas._libs.tslibs.timestamps import Timestamp
+from pandas.core.dtypes.dtypes import DatetimeTZDtype
 import pytz
 from functools import lru_cache
 from collections import Counter
@@ -78,6 +80,9 @@ reconciliation = {
 	}
 }
 
+def clean_print(p, last=False):
+	print(p, end='\r', flush=True)
+	if last: print()
 
 # Returns a CPDB table as a dataframe
 @lru_cache
@@ -200,6 +205,48 @@ def convert(series, cd):
 	return series
 
 
+def match_officer(row, index, length, officers = load_data('data_officer')):
+
+	print(f'Currently identifying officer for TRR {index} / {length}', end='\r', flush=True)
+
+	# Getting a dictionary of all the relevant values for matching
+	match_columns = ['officer_last_name', 'officer_first_name', 'officer_appointed_date', 'officer_birth_year', 'officer_race', 'officer_gender', 'officer_middle_initial']
+
+	# Getting the data cleaned to match with the data_officer
+	row_data = {}
+	for column in match_columns:
+		row_data[column] = str(row[column])[:10] if isinstance(row[column], (pd.DatetimeTZDtype, datetime, Timestamp)) else row[column]
+
+	
+	# Initializing query to contain only the info we need to search through
+	query = officers[['id', 'last_name', 'first_name', 'appointed_date', 'birth_year', 'race', 'gender', 'middle_initial']]
+
+	# Going through all the row data to identify the officer
+	for row, data in row_data.items():
+
+		# We want to skip NaNs
+		if data == float('NaN'):
+			continue
+
+		# Removing 'officer_'
+		row = row[8:]
+
+		# Updating the query with the new row data
+		new = query[query[row] == data]
+
+		if new.empty:
+			continue
+
+		query = new
+
+		if len(query) == 1:
+			return query.iat[0, 0]
+
+	# We did not identify a single officer
+	return float('NaN')
+	
+
+
 # Given a filename, outputs a cleaned CSV of the file in ../output/
 def clean_data(filename):
 
@@ -208,9 +255,13 @@ def clean_data(filename):
 
 	# Removing 'SELECT_FROM_' and '.csv'
 	name = filename[12:-4]
+	print(f'Currently cleaning {name}')
 
 	# 2.1: Correcting types
 	if name in type_correction:
+
+		clean_print(f'correcting types...')
+
 		for column in type_correction[name]:
 
 			# Correcting datetimes
@@ -235,6 +286,9 @@ def clean_data(filename):
 
 	# 2.2: Reconciliation
 	if name in reconciliation:
+
+		clean_print(f'reconciling data...')
+
 		for table in reconciliation[name]:
 			
 			# Getting the real data (already cleaned)
@@ -271,13 +325,71 @@ def clean_data(filename):
 
 
 	# 3.1 Linking Officer IDs
+	if name in ('trr_trr_refresh', 'trr_trrstatus_refresh'):
 
+		clean_print(f'linking officer IDs...')
+
+		# Gathering officer IDs per TRR
+		data['officer_id'] = None
+		limit = 1000
+		limit = limit if limit >= 0 else len(data)
+
+		for i in range(limit):
+			data.at[i, 'officer_id'] = match_officer(data.iloc[i], i, len(data))
+		print()
+
+		data['officer_id'] = data['officer_id'].astype(float)
+
+		# Removing columns that are not present in the final tables
+		data.drop(['officer_first_name', 'officer_middle_initial', 'officer_last_name', 'officer_race', 'officer_gender', 'officer_birth_year', 'officer_appointed_date'], axis=1, inplace=True)
+
+		if name == 'trr_trr_refresh':
+			data.drop('officer_unit_detail', axis=1, inplace=True)
+
+
+	# 3.2 Linking police units
+	if name == 'trr_trr_refresh':
+
+		clean_print(f'linking police units...')
+
+		# Getting associations between unit names and their ID
+		cd = {'REDACTED': float('NaN')}
+		policeunits = load_data('data_policeunit')
+		for _, row in policeunits.iterrows():
+			cd[str(row['unit_name'])] = row['id']
+		
+		# Changing unit names to unit IDs
+		data['officer_unit_name'] = convert(data['officer_unit_name'], cd)
+		data.rename({'officer_unit_name': 'officer_unit_id'}, axis=1, inplace=True)
+		data['officer_unit_detail_id'] = data['officer_unit_id']
+
+
+	# 3.3 Valdating TRR IDs
+	else:
+
+		clean_print(f'validating TRR IDs...')
+		
+		# Getting all valid TRR ids
+		valid_trrs = set([x for x in load_data('trr_trr_refresh')['id']])
+
+		# Finding which TRR ids to drop
+		to_drop = []
+		for index, row in data.iterrows():
+			clean_print(f'validating TRR id {index + 1} / {len(data)}')
+			if row['trr_report_id'] not in valid_trrs:
+				to_drop.append(index)
+
+		# Dropping rows which contain invalid TRR IDs
+		clean_print(f'\ndropped {len(to_drop)} rows containing invalid TRR IDs', last=True)
+		data.drop(to_drop, inplace=True)
 
 	# Outputting all cleaned tables to ./output/ as CSVs
+	clean_print(f'outputting to CSV...')
 	data.to_csv('./output/' + name + '.csv')
 
+	# Final Output
+	clean_print(f'cleaning of {name} complete!\n', last=True)
 	return data, name
-
 
 
 if __name__ == '__main__':
@@ -289,5 +401,3 @@ if __name__ == '__main__':
 	# Creating a cleaned version for each
 	for f in to_clean:
 		data, name = clean_data(f)
-		if name == 'trr_trr_refresh': 
-			pass

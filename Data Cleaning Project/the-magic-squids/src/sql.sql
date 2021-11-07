@@ -14,5 +14,5 @@ SELECT * FROM trr_charge;
 SELECT * FROM trr_subjectweapon;
 SELECT * FROM trr_trrstatus;
 SELECT * FROM trr_weapondischarge;
-
 SELECT * FROM data_officer;
+SELECT * FROM data_policeunit;
