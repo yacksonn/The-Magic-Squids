@@ -1,8 +1,10 @@
 import os
 import pandas as pd
+import pytz
 from functools import lru_cache
 from collections import Counter
 from difflib import SequenceMatcher
+from datetime import datetime, timedelta
 
 # Gets us one level up, so that we can access all files
 os.chdir(os.path.relpath('..'))
@@ -151,25 +153,42 @@ def capitalized(string):
 # Given an ambiguous integer corresponding to age or birth year, returns the most likely birth year
 def age_to_year(age, split=1940):
 
-	print(age)
-
 	# Handle list of ages recursively:
 	if isinstance(age, list):
 		return [age_to_year(x) for x in age]
 	
 	# Guessing their birth year based on a split
-	if isinstance(age, (int, float)) and age < 100:
+	if age != float('NaN') and age < 100:
 		split = 2021 - split
 		return age + 1900 if age > split else 2021 - age
 
+	# Correctly formatted ages and non number values
+	return age
 
+
+# If a date is after 2021, return the same datetime in 1900s
+def fix_dates(date):
+
+	# Converting strings to datetime objects
+	if isinstance(date, str):
+		date = datetime.fromisoformat(date)
+
+	# Getting UTC localized today date
+	utc = pytz.UTC
+	today = utc.localize(datetime.today())
+
+	# Condition for changing the date
+	if isinstance(date, (pd.DatetimeTZDtype, datetime)) and date > today:
+		return date - timedelta(days=36500)
+
+	return date
 
 
 # Taking a pd.Series object and a conversion dict / function, returns a new series with all values converted accordingly. SERIES MUST BE A SINGLE COLUMN
-def convert(series, cd=capitalized):
+def convert(series, cd):
 
 	# Capitalizing values by default
-	if isinstance(cd, type(capitalized)):
+	if isinstance(cd, type(lambda: None)):
 		for i, value in enumerate(series):
 			series.at[i] = cd(value)
 
@@ -225,9 +244,13 @@ def clean_data(filename):
 
 				# Getting all valid conversion values
 				valid = set(clean[column[1]].to_list())
+				dtype = Counter([type(x) for x in valid]).most_common()[0][0]
+
+				if isinstance(data[column[0]].dtype, pd.DatetimeTZDtype):
+					data[column[0]] = convert(data[column[0]], fix_dates)
 
 				# Reconciliation of numerical columns
-				if Counter([type(x) for x in valid]).most_common()[0][0] in [int, float]:
+				elif isinstance(dtype, (int, float)):
 					data[column[0]] = convert(data[column[0]], age_to_year)
 
 				# Reconciliation of categorical columns
@@ -244,7 +267,10 @@ def clean_data(filename):
 
 				# Reconciliation of non-categorical columns
 				else:
-					data[column[0]] = convert(data[column[0]])
+					data[column[0]] = convert(data[column[0]], capitalized)
+
+
+	# 3.1 Linking Officer IDs
 
 
 	# Outputting all cleaned tables to ./output/ as CSVs
