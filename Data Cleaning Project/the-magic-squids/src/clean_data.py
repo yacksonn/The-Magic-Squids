@@ -189,6 +189,21 @@ def fix_dates(date):
 	return date
 
 
+# Cleans floats / NaN values for final CSV output
+def clean_float(f):
+	if f.endswith('.0'):
+		return f[:-2]
+	elif f == 'nan':
+		return ''
+	return f
+
+# Cleans strings w/ NaN values for final CSV output
+def clean_string(s):
+	if s == 'nan':
+		return ''
+	return s
+
+
 # Taking a pd.Series object and a conversion dict / function, returns a new series with all values converted accordingly. SERIES MUST BE A SINGLE COLUMN
 def convert(series, cd):
 
@@ -266,7 +281,9 @@ def clean_data(filename):
 
 			# Correcting datetimes
 			if column[1] == 'datetime64':
+				#print(data[column[0]])
 				data[column[0]] = pd.to_datetime(data[column[0]], utc=True, errors='coerce')
+				#print(data[column[0]])
 
 			# Correcting integers
 			elif column[1] == 'int64':
@@ -301,7 +318,9 @@ def clean_data(filename):
 				dtype = Counter([type(x) for x in valid]).most_common()[0][0]
 
 				if isinstance(data[column[0]].dtype, pd.DatetimeTZDtype):
+					#print(data[column[0]])
 					data[column[0]] = convert(data[column[0]], fix_dates)
+					#print(data[column[0]])
 
 				# Reconciliation of numerical columns
 				elif isinstance(dtype, (int, float)):
@@ -331,7 +350,7 @@ def clean_data(filename):
 
 		# Gathering officer IDs per TRR
 		data['officer_id'] = None
-		limit = 1000
+		limit = -1
 		limit = limit if limit >= 0 else len(data)
 
 		for i in range(limit):
@@ -361,7 +380,7 @@ def clean_data(filename):
 		# Changing unit names to unit IDs
 		data['officer_unit_name'] = convert(data['officer_unit_name'], cd)
 		data.rename({'officer_unit_name': 'officer_unit_id'}, axis=1, inplace=True)
-		data['officer_unit_detail_id'] = data['officer_unit_id']
+		data['officer_unit_detail_id'] = data['officer_unit_id'][:]
 
 
 	# 3.3 Valdating TRR IDs
@@ -383,9 +402,14 @@ def clean_data(filename):
 		clean_print(f'\ndropped {len(to_drop)} rows containing invalid TRR IDs', last=True)
 		data.drop(to_drop, inplace=True)
 
+
+	# Cleaning floats before final CSV output
+	for c in data.columns:
+		data[c] = convert(data[c].astype(str), clean_float) if data[c].dtype in [int, float] else (convert(data[c], clean_string) if data[c].dtype != float else data[c])
+
 	# Outputting all cleaned tables to ./output/ as CSVs
 	clean_print(f'outputting to CSV...')
-	data.to_csv('./output/' + name + '.csv')
+	data.to_csv('./output/' + name + '.csv', index=False)
 
 	# Final Output
 	clean_print(f'cleaning of {name} complete!\n', last=True)
