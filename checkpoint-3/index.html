@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<script>
+
+    // set the dimensions and margins of the graph
+    var margin = {top: 30, right: 30, bottom: 30, left: 30},
+      width = 2500 - margin.left - margin.right,
+      height = 1000 - margin.top - margin.bottom;
+    
+    // append the svg object to the body of the page
+    var svg = d3.select("#my_dataviz")
+    .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+    
+    // Labels of row and columns
+    var myGroups = [
+                    "Operation/Personnel Violations",
+                    "Use Of Force",
+                    "Illegal Search",
+                    "Verbal Abuse",
+                    "Traffic",
+                    "Conduct Unbecoming (Off-Duty)",
+                    "Lockup Procedures",
+                    "Domestic",
+                    "Criminal Misconduct",
+                    "Supervisory Responsibilities",
+                    "False Arrest",
+                    "Bribery / Official Corruption",
+                    "Drug / Alcohol Abuse",
+                    "First Amendment",
+                    "Excessive Force",
+                    "Money / Property",
+                    "Medical",
+                    "Racial Profiling",
+                    "Unknown"
+
+      /*"Absent Without Permission",
+                    "Abuse Of Authority",
+                    "Accident - Injury",
+                    "Accident - No Injury",
+                    "Accident - Property Damage",
+                    "Ageism",
+                    "Altercation / Disturbance - Neighbor",
+                    "Altercation / Disturbance - Other",
+                    "Altercation / Disturbance - Traffic",
+                    "Altering Medical Documents",
+                    "An Act To Circumvent Criminal Prosecution",
+                    "Arrestee-After Arrest,Prior To Lockup",
+                    "Arrestee-During  Arrest",
+                    "Arrestee-Lockup/Deletion",
+                    "Arrest, Improper Procedures",
+                    "Arson",
+                    "Assault / Battery, Etc.",
+                    "Association With Felon",
+                    "Auto Theft",
+                    "BONDING",
+                    "Bonding/Booking/Processing",
+                    "Bribe, Failure To Report",
+                    "Choked",
+                    "Civil Suits - Third Party",
+                    "Closed Hand Strike (Punch)",
+                    "Coercion - Miscellaneous",
+                    "Coercion - Threat Of Arrest/Charges",
+                    "Coercion - Violence",
+                    "Compensatory Time",
+                    "Conduct An Improper / Inadequate Investigation",
+                    "Conduct Unbecoming",
+                    "Conspiracy To Commit A Crime",
+                    "Court Attendance Irregularities",
+                    "Criminal Sexual Assault",
+                    "Damage Property",
+                    "Damage / Trespassing To Property",
+                    "Disability",
+                    "Domestic Altercation/Incident - Off Duty",
+                    "Domestic Altercation - Physical Abuse",
+                    "Domestic Incident - Not Physical",
+                    "Dragged",
+                    "Drivers License - Revoked / Suspended",
+                    "Drugs / Controlled Substance, Possession Or Sale",
+                    "D.U.I., Drugs / Controlled Substance - Off Duty",
+                    "D.U.I., Drugs / Controlled Substance - On Duty",
+                    "Dui-No Accident",
+                    "D.U.I. - Off Duty",
+                    "D.U.I. - On Duty",
+                    "Eeo Investigations",
+                    "Equal Employment Opportunities Investigations",
+                    "Equipment Irregularity",
+                    "Escape",
+                    "Excessive Detention - After Arrest",
+                    "Excessive Force / Off Duty - Injury",
+                    "Excessive Force / Off Duty - No Injury",
+                    "Excessive Force / On Duty - Injury",
+                    "Excessive Force / On Duty - No Injury",
+                    "Excessive Force - Taser - Use Of",
+                    "Excessive Force - Use Of Firearm / Off Duty - Injury",
+                    "Excessive Force - Use Of Firearm / Off Duty - No Injury",
+                    "Excessive Force - Use Of Firearm / On Duty - Injury",
+                    "Excessive Force - Use Of Firearm / On Duty - No Injury",
+                    "Extortion",
+                    "Facility",
+                    "Fail To Enforce Traffic Regulations",
+                    "Fail To Obtain A Complaint Register Number",
+                    "Fail To Submit",
+                    "Failure To Ensure - Civil Rights",
+                    "Failure To Ensure Civil Rights",
+                    "Failure To Identify",
+                    "Failure To Leave Notification",
+                    "False Testimony In Court",
+                    "Federal Civil Suit",
+                    "Firearm Discharge No Hits - Handgun",
+                    "Firearm Discharge With Hits - Handgun",
+                    "Firearm Discharge With Hits / Off Duty",
+                    "Firearm Discharge With Hits / On Duty",
+                    "Firearm Discharge With Hits - Rifle / Assault Weapon",
+                    "Firearm Used As An Impact Weapon",
+                    "First Amendment",
+                    "Forwarded To O.E.C.",
+                    "Gang Affiliation",
+                    "Gender",
+                    "Gratuity",
+                    "Handcuff Too Tight",
+                    "Harassment",
+                    "Hostile Work Environment",
+                    "Illegal Arrest / False Arrest",
+                    "Impact Weapon - Authorized (Baton / Asp)",
+                    "Impact Weapon - Unauthorized (Flashlight, Handcuffs, Etc)",
+                    "Impairment .04 Or Greater - Off Duty",
+                    "Impairment .04 Or Greater - On Duty",
+                    "Improper",
+                    "Improper Detention",
+                    "Improper Processing / Reporting / Procedures",
+                    "Improper Search Of Person",
+                    "Improper Search Of Vehicle",
+                    "Improper Service Of Warrant",
+                    "Inadequate / Failure To Provide Service",
+                    "Indebtedness To City",
+                    "Initiate Proper Action",
+                    "Injury",
+                    "Injury / Death (Under Color Of Law)",
+                    "Insubordination",
+                    "Intoxicated Off Duty",
+                    "Intoxicated On Duty",
+                    "Inventory Procedures",
+                    "Judicial Process/Directive - Contempt",
+                    "Just Cause",
+                    "Kicked",
+                    "Knee Strike",
+                    "Late - Roll Call / Assignment / Court",
+                    "Leaving Assignment (District, Beat, Sector, Court)",
+                    "Lost / Stolen Weapon",
+                    "Lunch / Personal Violations",
+                    "Medical Roll Violation",
+                    "Miscellaneous",
+                    "Misconduct During Issuance Of Citation",
+                    "Misdemeanor Arrest",
+                    "Missing Both",
+                    "Missing Money",
+                    "Missing Money Or Property",
+                    "Missing Property",
+                    "Misuse Of Department Equipment / Supplies",
+                    "Misuse Of Department Records",
+                    "Money - Failed To Inventory",
+                    "Motor Vehicle Fatality - On Duty",
+                    "Murder / Manslaughter, Etc.",
+                    "Neglect Of Duty",
+                    "No Arrest",
+                    "No Injury",
+                    "Non Arrestee",
+                    "Open Hand Strike (Slap)",
+                    "Other",
+                    "Other Felony",
+                    "Other Misdemeanor Arrest",
+                    "Parking Complaints",
+                    "Planting Controlled Substance In Premise",
+                    "Planting Controlled Substance In Vehicle",
+                    "Planting Controlled Substance On Person",
+                    "Police Impersonator (Advocate Section Use Only)",
+                    "Political Activity",
+                    "Positive Drug Screen - Originated From Complaint",
+                    "Positive Drug Screen - Other Physical Exam",
+                    "Possession / Drinking Alcohol - On Duty",
+                    "Preventable Traffic Accident",
+                    "Prisoners Property",
+                    "Proper Care - Injury / Death",
+                    "Properly Direct Subordinate",
+                    "Properly Review / Inspect Subordinate",
+                    "Property - Failed To Inventory",
+                    "Property - Failed To Issue Receipt",
+                    "Push/Pull/Grab",
+                    "Racial",
+                    "Racial / Ethnic, Etc.",
+                    "Racial Profiling",
+                    "Recommend Professional Service",
+                    "Refusal Of Direct Order For Physical",
+                    "Refusal Of Direct Order To Provide Drug Screen Specimen",
+                    "Reports",
+                    "Residency",
+                    "Robbery",
+                    "Search Of Person - Property / Usc Taken",
+                    "Search Of Premise - Property / Usc Taken",
+                    "Search Of Premise Without Warrant",
+                    "Search Of Vehicle - Property / Usc Taken",
+                    "Search - Person / Property",
+                    "Seat Belts",
+                    "Secondary/Special Employment",
+                    "Sex Offense Other",
+                    "Sexual Harassment",
+                    "Sexual Misconduct",
+                    "Sexual Orientation",
+                    "Shoplifting",
+                    "Shots Fired - No Hits",
+                    "Slow / No Response",
+                    "Solicit / Accept Bribe (Non-Traffic)",
+                    "Solicit / Accept Bribe (Traffic)",
+                    "State Civil Suit",
+                    "Stomped / Stepped On",
+                    "Street",
+                    "Take Down (Thrown To Ground)",
+                    "Taser (Probe Discharge)",
+                    "Telephone / Attorney / Relative Privileges",
+                    "Theft",
+                    "Threats",
+                    "Traffic",
+                    "Traffic Pursuit",
+                    "Traffic Violations (Other Than D.U.I.)",
+                    "U Converted To C.R. (Records Keeping Only, Initial)",
+                    "Unfit For Duty",
+                    "Unjustified Pointing Of Firearm - Handgun",
+                    "Unlawful / Excessive Investigative Detention (Witness)",
+                    "Unnecessary Display Of Weapon / Off Duty",
+                    "Unnecessary Display Of Weapon / On Duty",
+                    "Unnecessary Physical Contact / Off Duty - No Injury",
+                    "Unnecessary Physical Contact -On Duty",
+                    "Unnecessary Physical Contact / On Duty - No Injury",
+                    "Use / Abuse Drugs / Controlled Substance - Off Duty",
+                    "Use / Abuse Drugs / Controlled Substance - On Duty",
+                    "Use Of Official Position",
+                    "Use Of Profanity",
+                    "Vehicle",
+                    "Vehicle Licensing - City",
+                    "Vehicle Licensing - State",
+                    "Verbal Abuse",
+                    "Violation Of Court Order",
+                    "Violation (Other Than D.U.I.) - On Duty",
+                    "Weapon / Ammunition",
+                    "Weapon Irregularity",
+                    "With Keys",
+                    "Without Keys",
+                    "Working While On The Medical / Iod",
+                    "Wrong Address"*/
+]
+    var myVars = []
+    var beat = 1527
+    while (beat <= 1551){
+      myVars.push(beat)
+      beat += 1
+    }
+    
+    // Build X scales and axis:
+    var x = d3.scaleBand()
+      .range([ 0, width ])
+      .domain(myGroups)
+      .padding(0.01);
+    svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x))
+    
+    // Build X scales and axis:
+    var y = d3.scaleBand()
+      .range([ height, 0 ])
+      .domain(myVars)
+      .padding(0.01);
+    svg.append("g")
+      .call(d3.axisLeft(y));
+    
+    // Build color scale
+    var myColor = d3.scaleLinear()
+      .range(["white", "#69b3a2"])
+      .domain([1,1000])
+    
+    //Read the data
+    d3.csv("data.csv", function(data) {
+    
+      // create a tooltip
+      var tooltip = d3.select("#my_dataviz")
+        .append("div")
+        .style("opacity", 0)
+        .attr("class", "tooltip")
+        .style("background-color", "white")
+        .style("border", "solid")
+        .style("border-width", "2px")
+        .style("border-radius", "5px")
+        .style("padding", "5px")
+    
+      // Three function that change the tooltip when user hover / move / leave a cell
+      var mouseover = function(d) {
+        tooltip.style("opacity", 1)
+      }
+      var mousemove = function(d) {
+        tooltip
+          //.html("The exact value of<br>this cell is: " + d.value)
+          .html("District Id " + d.variable + " has " + d.value + " count(s) of " + d.group)
+          .style("left", (d3.mouse(this)[0]+70) + "px")
+          .style("top", (d3.mouse(this)[1]) + "px")
+      }
+      var mouseleave = function(d) {
+        tooltip.style("opacity", 0)
+      }
+    
+      // add the squares
+      svg.selectAll()
+        .data(data, function(d) {return d.group+':'+d.variable;})
+        .enter()
+        .append("rect")
+          .attr("x", function(d) { return x(d.group) })
+          .attr("y", function(d) { return y(d.variable) })
+          .attr("width", x.bandwidth() )
+          .attr("height", y.bandwidth() )
+          .style("fill", function(d) { return myColor(d.value)} )
+        .on("mouseover", mouseover)
+        .on("mousemove", mousemove)
+        .on("mouseleave", mouseleave)
+    })
+    
+    </script>
