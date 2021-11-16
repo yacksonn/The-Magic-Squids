@@ -10,7 +10,7 @@
 <script>
 
     // set the dimensions and margins of the graph
-    var margin = {top: 30, right: 30, bottom: 30, left: 30},
+    var margin = {top: 30, right: 30, bottom: 30, left: 100},
       width = 2500 - margin.left - margin.right,
       height = 1000 - margin.top - margin.bottom;
     
@@ -260,12 +260,38 @@
                     "Working While On The Medical / Iod",
                     "Wrong Address"*/
 ]
-    var myVars = []
-    var beat = 1527
+    var myVars = [
+      "1527 (0.03)",
+      "1528 (0.10)",
+      "1529 (0.00)",
+      "1530 (0.00)",
+      "1531 (0.07)",
+      "1532 (0.16)",
+      "1533 (0.07)",
+      "1534 (0.98)",
+      "1535 (0.94)",
+      "1536 (0.62)",
+      "1537 (0.97)",
+      "1538 (0.00)",
+      "1539 (0.61)",
+      "1540 (0.94)",
+      "1541 (0.18)",
+      "1542 (0.01)",
+      "1543 (0.21)",
+      "1544 (0.09)",
+      "1545 (0.18)",
+      "1546 (0.85)",
+      "1547 (0.93)",
+      "1548 (0.33)",
+      "1549 (0.21)",
+      "1550 (0.11)",
+      "1551 (0.69)"
+    ]
+    /*var beat = 1527
     while (beat <= 1551){
       myVars.push(beat)
       beat += 1
-    }
+    }*/
     
     // Build X scales and axis:
     var x = d3.scaleBand()
