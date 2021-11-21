@@ -1,0 +1,1 @@
+\copy (SELECT crid, officer_id, category, race, gender FROM (SELECT * FROM data_officerallegation doa JOIN (SELECT * FROM data_allegation da JOIN data_complainant dc ON da.crid = dc.allegation_id) da ON da.crid = doa.allegation_id) da JOIN data_allegationcategory dac ON dac.id = da.allegation_category_id) TO '../data/allegation.csv' with csv header;
