@@ -1,0 +1,5 @@
+psql -U cpdbstudent -h codd04.research.northwestern.edu -p 5433 postgres < queries.txt
+
+python prep_data.py
+
+python analyze_data.py

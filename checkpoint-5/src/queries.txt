@@ -1,0 +1,3 @@
+\copy (SELECT race, count, area_id, CONCAT(CAST(name AS varchar), ' (', CAST(description as varchar), ')') AS district_name FROM data_racepopulation drp JOIN data_area da ON da.id = drp.area_id WHERE da.area_type = 'police-districts') TO '../data/pop_raw.csv' with csv header;
+
+\copy (SELECT crid, cr_text, location, da.id AS district_id FROM data_allegation dal JOIN (SELECT * FROM data_area WHERE area_type = 'police-districts') da ON st_contains(da.polygon, dal.point) WHERE cr_text != '') TO '../data/narratives.csv' with csv header;
