@@ -1,4 +1,8 @@
-# Preparation
+## Goals for this checkpoint
+
+Analyze the sentiment of complaint narratives on a per neighborhood basis, and investigate the relationship between the mean negativity of reports and the proportion of black residents. Additionally, we perform sentiment analysis separately for black and non-black residents to see if any kind of interaction exists.
+
+## Preparation
 
 Create a fresh python environment then activate it. Navigate to the path containing our code (checkpoint-5/src/). Install our requirements using the following command:
 
@@ -6,7 +10,7 @@ Create a fresh python environment then activate it. Navigate to the path contain
 
 All instructions henceforth should be performed from inside the src directory
 
-# Instructions (WITH GPU)
+## Instructions (WITH GPU)
 
 The instructions below **REQUIRE** a CUDA GPU. If you do not have a GPU available locally, please follow the second set of instructions available below the first
 
@@ -24,7 +28,7 @@ In case you are unable to produce any of the CSVs in the steps prior to the last
 
 If you really prefer to run this locally without a GPU, it can be done by removing the device=0 argument on line 28 of prep_data.py. This will allow prep_data.py to run through without issue even if torch has not been compiled with CUDA enabled. Expect execution times in excess of 30 minutes.
 
-# Instructions (WITHOUT GPU)
+## Instructions (WITHOUT GPU)
 
 Please follow this set of instructions if you do not have access to a GPU locally.
 
