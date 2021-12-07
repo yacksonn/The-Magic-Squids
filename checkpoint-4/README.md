@@ -5,7 +5,7 @@ For this checkpoint, run the following commands in order after activating a new 
  - bash get_data.txt
  - python code.py
 
-# Goals for this Checkpoint
+## Goals for this Checkpoint
 
 For this checkpoint, we sought to investigate the following questions
 
