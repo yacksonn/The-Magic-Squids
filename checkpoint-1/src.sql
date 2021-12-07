@@ -1,0 +1,126 @@
+-- Frequently Used Temp Table for Total Population
+
+CREATE TEMP TABLE total_population AS
+    SELECT SUM(count) AS total_residents, area_id
+    FROM data_racepopulation drp
+        JOIN data_area da ON drp.area_id = da.id
+    WHERE da.area_type = 'police-districts'
+    GROUP BY drp.area_id
+    ORDER BY drp.area_id;
+    
+    
+    
+
+-- QUESTION 1: What is the number of police officers per capita that are assigned to each police district?
+
+CREATE TEMP TABLE beats_and_areas as
+    SELECT officer_id, beat_id as beat_id, area_id as area_id, start_timestamp
+    FROM data_officerassignmentattendance oaa
+    JOIN data_policebeat pb on oaa.beat_id = pb.id;
+
+
+CREATE TEMP TABLE assignments_by_beat as
+    SELECT
+        COUNT(officer_id) AS total_assignments, area_id FROM beats_and_areas
+        WHERE beats_and_areas.start_timestamp >= TO_TIMESTAMP( '2020-07-24', 'yyyy-mm-dd' )
+        AND beats_and_areas.start_timestamp < TO_TIMESTAMP( '2020-07-25', 'yyyy-mm-dd')
+    GROUP BY area_id
+    ORDER BY area_id;
+
+CREATE TEMP TABLE assignments_per_beat_poly AS
+    SELECT total_assignments, area_id, polygon
+    FROM assignments_by_beat abb
+    JOIN data_area da ON abb.area_id = da.id
+    ORDER BY area_id;
+
+--CREATE TEMP TABLE assignments_per_district AS
+SELECT SUM(total_assignments) AS total_officers, da.id AS district_id, da.name as district_name
+FROM assignments_per_beat_poly apbp
+    JOIN data_area da ON st_intersects(da.polygon, apbp.polygon)
+WHERE da.area_type = 'police-districts'
+GROUP BY da.id
+ORDER BY da.id;
+
+
+
+
+DROP TABLE IF EXISTS beats_and_areas;
+DROP TABLE IF EXISTS assignments_by_beat;
+DROP TABLE IF EXISTS assignments_per_beat_poly;
+
+
+
+-- QUESTION 2: What is the number of complaints per capita per police district?
+
+CREATE TEMP TABLE allegations_per_beat AS
+    SELECT COUNT(beat_id) AS total_allegations, beat_id
+    FROM data_allegation da
+    GROUP BY da.beat_id;
+
+CREATE TEMP TABLE allegations_per_beat_poly AS
+    SELECT total_allegations, beat_id, polygon
+    FROM allegations_per_beat apb
+        JOIN data_area da ON beat_id = da.id
+    ORDER BY beat_id;
+
+CREATE TEMP TABLE allegations_per_district AS
+    SELECT SUM(total_allegations) AS total_allegations, da.id AS district_id
+    FROM allegations_per_beat_poly apb
+        JOIN data_area da ON st_intersects(da.polygon, apb.polygon)
+    WHERE da.area_type = 'police-districts'
+    GROUP BY da.id
+    ORDER BY da.id;
+
+SELECT total_allegations / total_residents as allegations_per_capita, district_id
+FROM allegations_per_district apd
+    JOIN total_population tp ON tp.area_id = apd.district_id;
+    
+    
+
+
+-- QUESTION 3: What is the proportion of black residents in each police district?
+
+CREATE TEMP TABLE black_population AS
+    SELECT count AS black_residents, area_id
+    FROM data_racepopulation drp
+        JOIN data_area da ON drp.area_id = da.id
+    WHERE drp.race = 'Black' AND da.area_type = 'police-districts'
+    ORDER BY drp.area_id;
+
+SELECT CAST(black_residents AS float) / CAST(total_residents AS float) AS proportion_black, bp.area_id AS district_id
+FROM black_population bp
+    JOIN total_population tp on bp.area_id = tp.area_id
+ORDER BY tp.area_id;
+
+
+
+
+-- QUESTION 4: Which type of complaint is most likely in each police district?
+
+CREATE TEMP TABLE number_of_allegations AS
+    SELECT
+           COUNT(da.beat_id) AS total_allegation_type,
+           da.most_common_category_id, da.beat_id, dac.id, dac.category, dac.allegation_name
+    FROM data_allegation da
+    JOIN data_allegationcategory dac
+    ON da.most_common_category_id = dac.id
+    GROUP BY da.beat_id, dac.allegation_name, da.most_common_category_id, da.beat_id, dac.id, dac.category, dac.allegation_name
+    ORDER BY da.beat_id;
+
+CREATE TEMP TABLE beats_with_polygons as
+    SELECT noa.total_allegation_type,noa.most_common_category_id,noa.beat_id,noa.id,noa.category,noa.allegation_name,da.polygon
+    FROM number_of_allegations noa
+    JOIN data_area da on noa.beat_id = da.id;
+
+SELECT beat_id, MAX(total_allegation_type) AS allegations, MAX(allegation_name) AS allegation_name, MAX(id) AS id, MAX(polygon) AS polygon
+FROM beats_with_polygons
+GROUP BY beat_id
+ORDER BY beat_id;
+
+/*SELECT
+    SUM(allegations) AS total_allegations, da.id AS district_id, MAX(abp.allegations) as allegations, MAX(abp.allegation_name) as allegation_name, CAST(polygon as geometry)
+    FROM allegations_by_polygon abp
+        JOIN data_area da ON st_intersects(da.polygon, abp.polygon)
+    WHERE da.area_type = 'police-districts'
+    GROUP BY da.id
+    ORDER BY da.id;*/
